@@ -1,0 +1,44 @@
+default_install_hook_types:
+  - pre-commit
+  - commit-msg
+
+repos:
+- repo: https://github.com/psf/black-pre-commit-mirror
+  rev: 24.8.0
+  hooks: [{ id: black, language_version: python3.12.4 }]
+- repo: https://github.com/alessandrojcm/commitlint-pre-commit-hook
+  rev: v9.20.0
+  hooks: [{ id: commitlint, stages: [commit-msg], additional_dependencies: ["@commitlint/config-conventional"] }]
+- repo: https://github.com/executablebooks/mdformat
+  rev: 0.7.17
+  hooks:
+  - id: mdformat
+    exclude: '.github/ISSUE_TEMPLATE/.*\.md$'
+    additional_dependencies:
+    - mdformat-black
+    - mdformat-config
+    - mdformat-gfm-alerts
+    - mdformat-tables
+    - mdformat-toc
+- repo: https://github.com/pre-commit/pre-commit-hooks
+  rev: v5.0.0
+  hooks:
+  - id: check-json
+  - id: check-toml
+  - id: check-yaml
+  - id: end-of-file-fixer
+    exclude: '.github/ISSUE_TEMPLATE/.*\.md$'
+  - id: forbid-submodules
+  - id: trailing-whitespace
+    exclude: 'README.md'
+- repo: local
+  hooks:
+  - id: commitlint-ci
+    name: commitlint-ci
+    stages: [manual]
+    always_run: true
+    language: node
+    additional_dependencies: ["@commitlint/config-conventional"]
+    entry: bash
+    args: ["-c", "npx commitlint --from $PRE_COMMIT_FROM_COMMIT --to $PRE_COMMIT_TO_COMMIT"]
+    pass_filenames: false
