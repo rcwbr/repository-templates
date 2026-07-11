@@ -2,17 +2,21 @@
 
 [![GitHub Release](https://img.shields.io/github/v/release/rcwbr/repository-templates?logo=semver&style=flat-square)](https://github.com/rcwbr/repository-templates/releases/latest)
 [![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/rcwbr/repository-templates/push-workflow.yaml?logo=github&style=flat-square)](https://github.com/rcwbr/repository-templates/actions/workflows/push-workflow.yaml?query=branch%3Amain)
-[![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit)](https://github.com/pre-commit/pre-commit)
+[![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white&style=flat-square)](https://github.com/pre-commit/pre-commit)
 [![Commitlint](https://img.shields.io/badge/commitlint-enabled-navy?style=flat-square&logo=commitlint)](https://github.com/conventional-changelog/commitlint)
-[![Conventional Commits](https://img.shields.io/badge/conventional_commits-compliant-pink?style=flat-square&logo=conventionalcommits)](https://www.conventionalcommits.org)
+[![Conventional Commits](https://img.shields.io/badge/conventional_commits-compliant-pink?style=flat-square&logo=conventionalcommits&logoColor=white)](https://www.conventionalcommits.org)
 
-PLACEHOLDER: Project description.
+Templates for new GitHub repositories with environments, settings, and automation.
 
 <!-- mdformat-toc start --slug=github --maxlevel=6 --minlevel=1 -->
 
 - [repository-templates](#repository-templates)
   - [Overview](#overview)
-  - [Installation](#installation)
+  - [Usage](#usage)
+    - [Creating a new repository](#creating-a-new-repository)
+      - [Step 1. Create repository](#step-1-create-repository)
+      - [Step 2. Create GitHub authentication and configure Apps](#step-2-create-github-authentication-and-configure-apps)
+      - [Step 3. Copy and configure template](#step-3-copy-and-configure-template)
   - [Contributing](#contributing)
     - [devcontainer](#devcontainer)
       - [devcontainer basic usage](#devcontainer-basic-usage)
@@ -25,11 +29,113 @@ PLACEHOLDER: Project description.
 
 ## Overview<a name="overview"></a>
 
-PLACEHOLDER: Brief overview of what the project does.
+A collection of GitHub repository templates providing standardized development environments, CI/CD
+workflows, and documentation. Templates are sourced from proven patterns used in production
+repositories.
 
-## Installation<a name="installation"></a>
+## Usage<a name="usage"></a>
 
-PLACEHOLDER: Add installation instructions using type-specific methods.
+### Creating a new repository<a name="creating-a-new-repository"></a>
+
+#### Step 1. Create repository<a name="step-1-create-repository"></a>
+
+Via the GitHub UI, create a repository and initialize with a README.md file.
+
+In repository settings, navigate to Pages and select GitHub Actions as the Source under Build and
+deployment.
+
+In repository settings, configure a Codespaces prebuild:
+
+1. Select Set up prebuild
+1. Select the default branch
+1. Set Prebuild triggers to Every push
+1. Select appropriate region availability to your case
+1. Set Template history to 1
+1. Optionally, specify recipients for Failure notifications
+
+#### Step 2. Create GitHub authentication and configure Apps<a name="step-2-create-github-authentication-and-configure-apps"></a>
+
+Install the [Probot settings GitHub App](https://probot.github.io/apps/settings/) by selecting Add
+to GitHub then selecting the new repository under Repository access.
+
+Create a GitHub App to enable automated releases. Follow
+[this link](https://github.com/settings/apps/new?name=NEW_PROJECT%20CI%20release-it&url=https://github.com/NEW_ORG/NEW_PROJECT&description=This%20app%20enables%20the%20NEW_PROJECT%20GitHub%20Actions%20workflow%20to%20authenticate%20as%20an%20app%20to%20publish%20tags%20and%20releases&webhook_active=false&contents=write)
+to create an App, or follow these manual steps:
+
+1. Navigate to [GitHub Settings > Developer Settings](https://github.com/settings/apps)
+1. Create a New GitHub App
+1. Under Webhook, disable Active
+1. Under Permissions, set Contents to Read and Write
+
+After App creation, configure it for use in the new repo:
+
+1. Generate a private key and save the App ID for later
+1. Install the App to your organization, selecting only the new repository
+1. Create an environment named `Repo release` in the repository Settings
+1. Add the App private key as a secret named `RELEASE_IT_GITHUB_APP_KEY` in that environment
+
+Create a
+[Personal Access Token](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens#creating-a-personal-access-token-classic)
+with `write:packages` scope.
+
+1. In repository settings for the new repo,
+   [add a Codespace secret](https://docs.github.com/en/codespaces/managing-codespaces-for-your-organization/managing-development-environment-secrets-for-your-repository-or-organization#adding-secrets-for-a-repository)
+   named `CODESPACES_PREBUILD_TOKEN` with the token as the value
+1. Add a secret named `USER` with value `codespace`
+1. Add a secret named `UID` with value `1000`
+1. Keep the token handy for step 3 of this guide
+
+#### Step 3. Copy and configure template<a name="step-3-copy-and-configure-template"></a>
+
+Prepare environment variables with the names of the org, project, local path, and app ID (from step
+2):
+
+```bash
+# Set target project path
+export NEW_ORG=<my-org>
+export NEW_PROJECT=<my-project-name>
+export NEW_REPO_PATH=</path/to/my-project>
+export NEW_RELEASE_IT_APP_ID=<app-id-from-step-2>
+export SECRET_PREFIX=$(echo "$NEW_PROJECT" | tr '[:lower:]' '[:upper:]' | tr '-' '_')
+```
+
+Clone the new repository and apply the base to it:
+
+```bash
+git clone "https://github.com/${NEW_ORG}/${NEW_PROJECT}.git" "${NEW_REPO_PATH}"
+
+# 1. Copy base template
+cp -a -- ./templates/base/. "$NEW_REPO_PATH"
+```
+
+If applicable, apply the type-specific files to the new repo:
+
+```bash
+# 2. Add type-specific files (optional)
+cp -a -- ./templates/docker/. "$NEW_REPO_PATH"    # For Docker projects
+# or
+cp -a -- ./templates/python/. "$NEW_REPO_PATH"    # For Python projects
+# or
+cp -a -- ./templates/node/. "$NEW_REPO_PATH"      # For Node.js projects
+```
+
+Replace template placeholders with the specified names and app ID:
+
+```bash
+# 3. Replace name placeholders
+./replace-placeholders
+```
+
+Follow the instructions printed by the script to configure Codespaces user secrets for the PAT from
+step 2.
+
+```bash
+# 4. Initialize and push
+cd "$NEW_REPO_PATH"
+git add .
+git commit -m "feat: initial project setup"
+git push -u origin main
+```
 
 ## Contributing<a name="contributing"></a>
 
