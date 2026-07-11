@@ -1,0 +1,5 @@
+{
+  "extends": [
+    "github:rcwbr/release-it-docker/file-bumper#0.8.1"
+  ]
+}
