@@ -1,3 +1,1 @@
-{
-  "extends": ["@commitlint/config-conventional"]
-}
+templates/base/.commitlintrc.json
