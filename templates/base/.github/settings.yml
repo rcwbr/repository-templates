@@ -1,6 +1,6 @@
 repository:
-  name: repository-templates
-  description: Templates for new GitHub repositories with environments, settings, and automation.
+  name: NEW_PROJECT
+  description: 'PLACEHOLDER: Project description'
   default_branch: main
 
   # Prevent strategies other than basic merge, as they interfere with conventional changelog version inference
@@ -21,7 +21,7 @@ rulesets:
           - "~ALL"
         exclude: []
     bypass_actors:
-      - actor_id: 4269124
+      - actor_id: NEW_RELEASE_IT_APP_ID
         actor_type: Integration
         bypass_mode: always
     rules:
@@ -41,7 +41,7 @@ rulesets:
       - actor_id: 5 # Based on https://registry.terraform.io/providers/integrations/github/latest/docs/resources/organization_ruleset#bypass_actors
         actor_type: RepositoryRole
         bypass_mode: pull_request
-      - actor_id: 4269124
+      - actor_id: NEW_RELEASE_IT_APP_ID
         actor_type: Integration
         bypass_mode: always
     rules:

@@ -1,0 +1,36 @@
+# Only provide the values to merge - comments are stripped on merge
+rulesets:
+  - name: Default branch rules
+    rules:
+      - type: required_status_checks
+        parameters:
+          required_status_checks:
+            - context: pytest
+              integration_id: 15368 # GitHub Actions integration ID
+            - context: codecov/patch/no-drop
+              integration_id: 254 # Codecov integration ID
+            - context: codecov/patch/minimum
+              integration_id: 254 # Codecov integration ID
+  - name: Docs branch rules
+    target: branch
+    enforcement: active
+    conditions:
+      ref_name:
+        include:
+          - "refs/heads/mkdocs"
+        exclude: []
+    bypass_actors:
+      - actor_id: NEW_MKDOCS_APP_ID
+        actor_type: Integration
+        bypass_mode: always
+    rules:
+      - type: creation
+      - type: deletion
+      - type: update
+environments:
+  - name: pypi
+    deployment_branch_policy:
+      custom_branches:
+        - main
+        - name: "*"
+          type: tag

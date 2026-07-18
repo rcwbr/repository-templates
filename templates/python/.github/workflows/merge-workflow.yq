@@ -1,0 +1,4 @@
+# Merge all jobs from extend file en masse
+.jobs *= (load("push-workflow.extend.yaml").jobs) |
+# Conditionally override build-docker-images step files if the job exists
+(select(.jobs | has("build-docker-images")) | .jobs.build-docker-images.steps[] | select(.uses == "docker/bake-action@v7.3.0").with.files) = (load("push-workflow-override.yml").jobs.build-docker-images.steps.docker-bake-NEW_PROJECT.files)

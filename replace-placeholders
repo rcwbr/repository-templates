@@ -1,0 +1,19 @@
+#!/bin/bash
+
+set -e
+
+cd "$NEW_REPO_PATH"
+
+# Only replace NEW_PROJECT if there are matches
+files=$(grep -rl "NEW_PROJECT" . --exclude-dir=.git 2>/dev/null || true)
+if [ -n "$files" ]; then
+    sed -i "s/NEW_PROJECT/${NEW_PROJECT}/g" $files
+fi
+
+# Only replace NEW_ORG if there are matches
+files=$(grep -rl "NEW_ORG" . --exclude-dir=.git 2>/dev/null || true)
+if [ -n "$files" ]; then
+    sed -i "s/NEW_ORG/${NEW_ORG}/g" $files
+fi
+
+cd -

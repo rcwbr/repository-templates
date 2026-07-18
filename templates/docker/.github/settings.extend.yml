@@ -1,0 +1,11 @@
+# Only provide the values to merge - comments are stripped on merge
+rulesets:
+  - name: Default branch rules
+    rules:
+      - type: required_status_checks
+        parameters:
+          required_status_checks:
+            - context: Build Docker images
+              integration_id: 15368
+            - context: Dive Docker image space efficiency analysis
+              integration_id: 15368

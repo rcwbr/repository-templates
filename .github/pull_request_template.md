@@ -1,3 +1,1 @@
-Closes #issue reference
-
-> Copy issue contents for reference
+../templates/base/.github/pull_request_template.md

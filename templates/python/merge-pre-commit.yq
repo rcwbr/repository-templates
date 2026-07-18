@@ -1,0 +1,1 @@
+.repos = (load(".pre-commit-config.extend.yaml").repos) + .repos
