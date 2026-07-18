@@ -1,0 +1,24 @@
+#!/bin/bash
+
+set -e
+
+CODESPACE_VSCODE_FOLDER=/workspaces/repository-templates
+DEVCONTAINER_HOST_WORKSPACE_MOUNT=/var/lib/docker/codespacemount/workspace/repository-templates
+NEW_REPO_PATH=/workspaces/repository-templates/test_python_repo_1
+NEW_ORG=rcwbr
+NEW_PROJECT=test-python-template
+NEW_RELEASE_IT_APP_ID=123456789
+NEW_MKDOCS_APP_ID=987654321
+SECRET_PREFIX=$(echo "$NEW_PROJECT" | tr '[:lower:]' '[:upper:]' | tr '-' '_')
+export CODESPACE_VSCODE_FOLDER
+export DEVCONTAINER_HOST_WORKSPACE_MOUNT
+export NEW_REPO_PATH
+export NEW_ORG
+export NEW_PROJECT
+export NEW_RELEASE_IT_APP_ID
+export NEW_MKDOCS_APP_ID
+export SECRET_PREFIX
+
+rm -rf "${NEW_REPO_PATH}"
+./templates/base/apply-template
+./templates/python/apply-template
