@@ -1,4 +1,7 @@
 {
+  "containerEnv": {
+    "DEVCONTAINER_WORKSPACE_PATH": "${containerWorkspaceFolder}"
+  },
   "customizations": {
     "vscode": {
       "extensions": [

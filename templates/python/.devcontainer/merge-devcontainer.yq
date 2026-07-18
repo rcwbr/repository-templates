@@ -1,0 +1,4 @@
+# Merge containerEnv additively
+.containerEnv *= load("devcontainer.extend.json").containerEnv |
+# Merge vscode extensions additively
+.customizations.vscode.extensions += load("devcontainer.extend.json").customizations.vscode.extensions | .
