@@ -16,7 +16,10 @@ Templates for new GitHub repositories with environments, settings, and automatio
     - [Creating a new repository](#creating-a-new-repository)
       - [Step 1. Create repository](#step-1-create-repository)
       - [Step 2. Create GitHub authentication and configure Apps](#step-2-create-github-authentication-and-configure-apps)
-      - [Step 3. Copy and configure template](#step-3-copy-and-configure-template)
+      - [Step 3. Prepare type-specific resources](#step-3-prepare-type-specific-resources)
+        - [Python template](#python-template)
+      - [Step 4. Copy and configure template](#step-4-copy-and-configure-template)
+      - [Step 5. Commit repo configuration](#step-5-commit-repo-configuration)
   - [Contributing](#contributing)
     - [devcontainer](#devcontainer)
       - [devcontainer basic usage](#devcontainer-basic-usage)
@@ -83,15 +86,60 @@ with `write:packages` scope.
    named `CODESPACES_PREBUILD_TOKEN` with the token as the value
 1. Add a secret named `USER` with value `codespace`
 1. Add a secret named `UID` with value `1000`
-1. Keep the token handy for step 3 of this guide
+1. Keep the token handy for step 4 of this guide
 
-#### Step 3. Copy and configure template<a name="step-3-copy-and-configure-template"></a>
+#### Step 3. Prepare type-specific resources<a name="step-3-prepare-type-specific-resources"></a>
 
-Prepare environment variables with the names of the org, project, local path, and app ID (from step
-2):
+Set up resources for any of the following specific types that apply to the new repo.
+
+##### Python template<a name="python-template"></a>
+
+Create a GitHub App to enable automated writes to an mkdocs branch. Follow
+[this link](https://github.com/settings/apps/new?name=NEW_PROJECT%20CI%20mkdocs&url=https://github.com/NEW_ORG/NEW_PROJECT&description=This%20app%20enables%20the%20NEW_PROJECT%20GitHub%20Actions%20workflow%20to%20authenticate%20as%20an%20app%20to%20publish%20to%20the%20docs%20branch&webhook_active=false&contents=write)
+to create an App, or follow these manual steps:
+
+1. Navigate to [GitHub Settings > Developer Settings](https://github.com/settings/apps)
+1. Create a New GitHub App
+1. Under Webhook, disable Active
+1. Under Permissions, set Contents to Read and Write
+
+After App creation, configure it for use in the new repo:
+
+1. Generate a private key and save the App ID for later
+1. Install the App to your organization, selecting only the new repository
+1. In the repository Settings, navigate to environment named `github-pages` created during step 1
+1. Add the App private key as a secret named `DOCS_GITHUB_APP_KEY` in that environment
+
+Export the App ID:
 
 ```bash
-# Set target project path
+export NEW_MKDOCS_APP_ID=<newly created app ID>
+```
+
+Prepare PyPi for publishing:
+
+1. Visit [PyPi publishing settings](https://pypi.org/manage/account/publishing/)
+1. Under Add a new pending publisher, select the GitHub tab
+1. Set PyPI Project Name to the name of the package (matching `pyproject.toml`)
+1. Set Owner to the GitHub org/user
+1. Set Repository name to the new repository name
+1. Set Workflow name to `push-workflow.yaml`
+1. Set Environment name to `pypi`
+
+Install the [Codecov GitHub App](https://github.com/apps/codecov) and configure it to apply to the
+new repo. Follow the prompt to log into GitHub, and configure the new repo on the Codecov landing
+page as well. Select Using GitHub Actions, then scroll to step 3. Copy the value provided for the
+`CODECOV_TOKEN` shown there.
+
+Navigate to the new repo settings, and add an Actions Repository secret named `CODECOV_TOKEN`, with
+the value copied.
+
+#### Step 4. Copy and configure template<a name="step-4-copy-and-configure-template"></a>
+
+Prepare environment variables with the names of the org, project, local path, and release app ID
+(from step 2):
+
+```bash
 export NEW_ORG=<my-org>
 export NEW_PROJECT=<my-project-name>
 export NEW_REPO_PATH=</path/to/my-project>
@@ -104,33 +152,29 @@ Clone the new repository and apply the base to it:
 ```bash
 git clone "https://github.com/${NEW_ORG}/${NEW_PROJECT}.git" "${NEW_REPO_PATH}"
 
-# 1. Copy base template
-cp -a -- ./templates/base/. "$NEW_REPO_PATH"
-```
-
-If applicable, apply the type-specific files to the new repo:
-
-```bash
-# 2. Add type-specific files (optional)
-cp -a -- ./templates/docker/. "$NEW_REPO_PATH"    # For Docker projects
-# or
-cp -a -- ./templates/python/. "$NEW_REPO_PATH"    # For Python projects
-# or
-cp -a -- ./templates/node/. "$NEW_REPO_PATH"      # For Node.js projects
-```
-
-Replace template placeholders with the specified names and app ID:
-
-```bash
-# 3. Replace name placeholders
-./replace-placeholders
+# 1. Apply base template
+./templates/base/apply-template
 ```
 
 Follow the instructions printed by the script to configure Codespaces user secrets for the PAT from
 step 2.
 
+If applicable, apply the type-specific templates to the new repo:
+
 ```bash
-# 4. Initialize and push
+# 2. Add type-specific templates (optional)
+./templates/docker/apply-template    # For Docker projects
+# or
+./templates/python/apply-template    # For Python projects
+```
+
+Execute the above `apply-template` call for each type applicable to the new repo.
+
+#### Step 5. Commit repo configuration<a name="step-5-commit-repo-configuration"></a>
+
+Commit and push the new repository configuration:
+
+```bash
 cd "$NEW_REPO_PATH"
 git add .
 git commit -m "feat: initial project setup"
