@@ -1,0 +1,58 @@
+#!/bin/bash
+
+set -e
+
+cp -a -- ./templates/docker/. "$NEW_REPO_PATH"
+
+cd "${NEW_REPO_PATH}"
+
+# Merge pre-commit hooks into local repo using yq script
+docker run \
+      --rm \
+      -v "${NEW_REPO_PATH//${CODESPACE_VSCODE_FOLDER}/${DEVCONTAINER_HOST_WORKSPACE_MOUNT}}:/workdir" \
+      -w /workdir \
+      mikefarah/yq:4.53.3 \
+      -i --from-file merge-pre-commit.yq .pre-commit-config.yaml
+
+# Merge release-it extends into release-it.json using yq script
+docker run \
+      --rm \
+      -v "${NEW_REPO_PATH//${CODESPACE_VSCODE_FOLDER}/${DEVCONTAINER_HOST_WORKSPACE_MOUNT}}:/workdir" \
+      -w /workdir \
+      mikefarah/yq:4.53.3 \
+      -i --from-file merge-release-it.yq .release-it.json
+
+# Merge GitHub Actions workflow fully
+docker run \
+  --rm \
+  -v "${NEW_REPO_PATH//${CODESPACE_VSCODE_FOLDER}/${DEVCONTAINER_HOST_WORKSPACE_MOUNT}}/.github/workflows:/workdir" \
+  --entrypoint yq \
+  mikefarah/yq:4.53.3 \
+  -i '. *= load("push-workflow.extend.yaml")' push-workflow.yaml
+
+# Merge required_status_checks into Default branch rules using yq script
+docker run \
+  --rm \
+  -v "${NEW_REPO_PATH//${CODESPACE_VSCODE_FOLDER}/${DEVCONTAINER_HOST_WORKSPACE_MOUNT}}/.github:/workdir" \
+  -w /workdir \
+  mikefarah/yq:4.53.3 \
+  -i --from-file merge-settings.yq settings.yml
+
+# Merge README.extend.md into README.md using sed (insert after first header with new_project anchor)
+sed -i '/^#.*<a name="new_project"><\/a>/{n;r README.extend.md
+}' README.md
+
+# Clean up extension files and application script
+rm .pre-commit-config.extend.yaml
+rm merge-pre-commit.yq
+rm merge-release-it.yq
+rm .release-it.extends.json
+rm README.extend.md
+rm .github/workflows/push-workflow.extend.yaml
+rm .github/settings.extend.yml
+rm .github/merge-settings.yq
+rm apply-template
+
+cd -
+
+./replace-placeholders

@@ -1,0 +1,1 @@
+[![Dive Docker efficiency](<https://img.shields.io/badge/dynamic/regex?label=dive%20efficiency&logo=docker&logoColor=white&style=flat-square&url=https%3A%2F%2Fgithub.com%2FNEW_ORG%2FNEW_PROJECT%2Freleases%2Flatest%2Fdownload%2Fdive.json&search=%22efficiencyScore%22%3A%20%5B0-9%5D%2B.(%5B0-9%5D%7B2%7D)(%5B0-9%5D%7B2%7D)&replace=%241.%242%25>)](https://github.com/wagoodman/dive)

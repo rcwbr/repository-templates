@@ -1,0 +1,1 @@
+. *= load(".release-it.extends.json")

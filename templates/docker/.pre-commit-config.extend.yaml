@@ -1,0 +1,6 @@
+  - id: hadolint-docker
+    name: Lint Dockerfiles
+    description: Runs hadolint Docker image to lint Dockerfiles
+    language: docker_image
+    types: ["dockerfile"]
+    entry: ghcr.io/hadolint/hadolint:2.12.0 hadolint
