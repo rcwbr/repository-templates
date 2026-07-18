@@ -1,0 +1,108 @@
+jobs:
+  pytest:
+    runs-on: ubuntu-24.04
+    needs: devcontainer-cache-build
+    container:
+      image: ${{ needs.devcontainer-cache-build.outputs.devcontainer-cache-image-ref }}
+      options: --user root
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4.1.7
+      - name: pytest-cov
+        env:
+          DEVCONTAINER_HOST_WORKSPACE_MOUNT: ${{ github.workspace }}
+          DEVCONTAINER_WORKSPACE_PATH: ${{ github.workspace }}
+          PYTEST_DEBUG_TEMPROOT: ${{ runner.temp }}
+        run: |
+          pip install -e .
+          pytest \
+            --cov=src \
+            --cov-branch \
+            --cov-report=xml \
+            --junitxml=junit.xml \
+            -vv \
+            --tb=long \
+            -o log_cli=true \
+            -o log_cli_level=DEBUG \
+            tests/unit
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@v5.5.1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@v5.5.1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          report_type: test_results
+          files: junit.xml
+  pages:
+    # Release pages on tags only
+    if: github.ref_type == 'tag'
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-24.04
+    needs: devcontainer-cache-build
+    container:
+      image: ${{ needs.devcontainer-cache-build.outputs.devcontainer-cache-image-ref }}
+      options: --user root
+    permissions:
+      pages: write
+      id-token: write
+    steps:
+      -
+        name: Authenticate as app
+        id: app-token
+        uses: actions/create-github-app-token@v2.2.1
+        with:
+          app-id: NEW_MKDOCS_APP_ID
+          private-key: ${{ secrets.DOCS_GITHUB_APP_KEY }}
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          token: ${{ steps.app-token.outputs.token }}
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+      - name: Mike
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git config --global user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git config --global user.name github-actions[bot]
+          pip install -e .
+          # Update docs for the default branch
+          mike deploy --branch mkdocs --update-aliases --push ${{ github.event.repository.default_branch }}
+          # Update docs for the release tag
+          mike deploy --branch mkdocs --update-aliases --push $(echo ${{ github.ref_name }} | sed 's|/|-|g')
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          ref: mkdocs
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: '.'
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5
+        with:
+          token: ${{ github.token }}
+  pypi-publish:
+    if: ${{ github.ref_type == 'tag' }}
+    runs-on: ubuntu-24.04
+    environment:
+      name: pypi
+    needs: devcontainer-cache-build
+    container:
+      image: ${{ needs.devcontainer-cache-build.outputs.devcontainer-cache-image-ref }}
+      options: --user root
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Build
+        run: $UV_PROJECT_ENVIRONMENT/bin/uv build
+      - name: Publish
+        run: $UV_PROJECT_ENVIRONMENT/bin/uv publish

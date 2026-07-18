@@ -1,0 +1,121 @@
+#!/bin/bash
+
+set -e
+
+cp -a -- ./templates/python/. "$NEW_REPO_PATH"
+
+cd "${NEW_REPO_PATH}"
+
+# Merge uv-project layer into devcontainer_layers using sed (insert after "tmux")
+sed -i '/    "tmux",/r .devcontainer/devcontainer-bake.layers.extend.hcl-part' .devcontainer/devcontainer-bake.hcl
+
+# Merge uv-project target into devcontainer-bake.hcl using cat (append HCL block at end)
+cat .devcontainer/devcontainer-bake.extend.hcl >> .devcontainer/devcontainer-bake.hcl
+
+# Merge initialize.extend into initialize using sed (insert after "tmux" line)
+sed -i '/  tmux\/devcontainer-bake.hcl/r .devcontainer/initialize.extend' .devcontainer/initialize
+
+# Merge devcontainer.extend.json into devcontainer.json using yq (merge extensions additively)
+docker run \
+      --rm \
+      -v "${NEW_REPO_PATH//${CODESPACE_VSCODE_FOLDER}/${DEVCONTAINER_HOST_WORKSPACE_MOUNT}}/.devcontainer:/workdir" \
+      -w /workdir \
+      mikefarah/yq:4.53.3 \
+      -i '.customizations.vscode.extensions += load("devcontainer.extend.json").customizations.vscode.extensions | .' devcontainer.json
+
+# Merge GitHub Actions workflow using conditional yq script
+docker run \
+      --rm \
+      -v "${NEW_REPO_PATH//${CODESPACE_VSCODE_FOLDER}/${DEVCONTAINER_HOST_WORKSPACE_MOUNT}}/.github/workflows:/workdir" \
+      -w /workdir \
+      mikefarah/yq:4.53.3 \
+      -i --from-file merge-workflow.yq push-workflow.yaml
+
+# Merge required_status_checks into Default branch rules using yq script
+docker run \
+      --rm \
+      -v "${NEW_REPO_PATH//${CODESPACE_VSCODE_FOLDER}/${DEVCONTAINER_HOST_WORKSPACE_MOUNT}}/.github:/workdir" \
+      -w /workdir \
+      mikefarah/yq:4.53.3 \
+      -i --from-file merge-settings.yq settings.yml
+
+# Merge black repo into pre-commit config using yq script
+docker run \
+      --rm \
+      -v "${NEW_REPO_PATH//${CODESPACE_VSCODE_FOLDER}/${DEVCONTAINER_HOST_WORKSPACE_MOUNT}}:/workdir" \
+      -w /workdir \
+      mikefarah/yq:4.53.3 \
+      -i --from-file merge-pre-commit.yq .pre-commit-config.yaml
+
+# Merge release-it extends into release-it.json using yq script
+docker run \
+      --rm \
+      -v "${NEW_REPO_PATH//${CODESPACE_VSCODE_FOLDER}/${DEVCONTAINER_HOST_WORKSPACE_MOUNT}}:/workdir" \
+      -w /workdir \
+      mikefarah/yq:4.53.3 \
+      -i --from-file merge-release-it.yq .release-it.json
+
+# Merge README.extend.md into README.md using sed (insert after first header with new_project anchor)
+sed -i '/^#.*<a name="new_project"><\/a>/{n;r README.extend.md
+}' README.md
+
+NEW_PROJECT_UNDERSCORES="${NEW_PROJECT//-/_}"
+
+mv src/NEW_PROJECT src/"${NEW_PROJECT_UNDERSCORES}"
+
+# Clean up extension files and application script
+rm .devcontainer/devcontainer-bake.layers.extend.hcl-part
+rm .devcontainer/devcontainer-bake.extend.hcl
+rm .devcontainer/devcontainer.extend.json
+rm .devcontainer/initialize.extend
+rm .github/workflows/push-workflow.extend.yaml
+rm .github/workflows/push-workflow-override.yml
+rm .github/workflows/merge-workflow.yq
+rm .github/settings.extend.yml
+rm .github/merge-settings.yq
+rm merge-pre-commit.yq
+rm merge-release-it.yq
+rm .pre-commit-config.extend.yaml
+rm .release-it.extends.json
+rm README.extend.md
+# Using index.md for mkdocs instead
+rm docs/index.html
+rm apply-template
+
+# Inject real App ID values for placeholders
+sed -i "s/NEW_MKDOCS_APP_ID/${NEW_MKDOCS_APP_ID}/g" $(grep -rl "NEW_MKDOCS_APP_ID" . --exclude-dir=.git)
+
+files=$(grep -rl "NEW_PROJECT_UNDERSCORES" . --exclude-dir=.git 2>/dev/null || true)
+if [ -n "$files" ]; then
+    # Replace with the Python-safe module name for imports
+    sed -i "s/NEW_PROJECT_UNDERSCORES/${NEW_PROJECT_UNDERSCORES}/g" $files
+fi
+
+cd -
+
+./replace-placeholders
+
+# Generate initial uv lock
+docker run \
+      --rm \
+      -v "${NEW_REPO_PATH//${CODESPACE_VSCODE_FOLDER}/${DEVCONTAINER_HOST_WORKSPACE_MOUNT}}:/workdir" \
+      -w /workdir \
+      ghcr.io/astral-sh/uv:0.11.28-python3.9-trixie \
+      uv lock
+
+# Generate initial docs config and branch
+docker run \
+      --rm \
+      -v "${NEW_REPO_PATH//${CODESPACE_VSCODE_FOLDER}/${DEVCONTAINER_HOST_WORKSPACE_MOUNT}}:/workdir" \
+      -w /workdir \
+      --entrypoint bash \
+      ghcr.io/astral-sh/uv:0.11.28-python3.9-trixie \
+      -c '\
+        uv sync --extra dev \
+        && source .venv/bin/activate \
+        && git config --global --add safe.directory /workdir \
+        && git config --global user.name mike \
+        && git config --global user.email mike@mkdocs \
+        && mike deploy --push --branch mkdocs main \
+        && mike alias --push --branch mkdocs --alias-type symlink main latest \
+        && mike set-default --push --branch mkdocs latest'

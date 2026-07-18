@@ -1,0 +1,5 @@
+jobs:
+  build-docker-images:
+    steps:
+      docker-bake-NEW_PROJECT:
+        files: "github-cache-bake.hcl, uv-project/docker-bake.hcl, cwd://docker-bake.hcl"
