@@ -4,17 +4,16 @@ set -e
 
 cd "$NEW_REPO_PATH"
 
-sed -i "s/NEW_PROJECT/${NEW_PROJECT}/g" $(grep -rl "NEW_PROJECT" . --exclude-dir=.git)
-sed -i "s/NEW_ORG/${NEW_ORG}/g" $(grep -rl "NEW_ORG" . --exclude-dir=.git)
-sed -i "s/NEW_RELEASE_IT_APP_ID/${NEW_RELEASE_IT_APP_ID}/g" $(grep -rl "NEW_RELEASE_IT_APP_ID" . --exclude-dir=.git)
-sed -i "s/SECRET_PREFIX/${SECRET_PREFIX}/g" $(grep -rl "SECRET_PREFIX" . --exclude-dir=.git)
+# Only replace NEW_PROJECT if there are matches
+files=$(grep -rl "NEW_PROJECT" . --exclude-dir=.git 2>/dev/null || true)
+if [ -n "$files" ]; then
+    sed -i "s/NEW_PROJECT/${NEW_PROJECT}/g" $files
+fi
 
-# Replace copyright year with current year in LICENSE
-sed -i "s/2026/$(date +%Y)/g" LICENSE
-
-echo "Visit https://github.com/settings/codespaces, and create new secrets for the following variables, selecting the new repository for each:"
-echo "  - ${SECRET_PREFIX}_CONTAINER_REGISTRY_SERVER with the value ghcr.io"
-echo "  - ${SECRET_PREFIX}_CONTAINER_REGISTRY_USER with the value of your GitHub username"
-echo "  - ${SECRET_PREFIX}_CONTAINER_REGISTRY_PASSWORD with the value of the PAT created in step 1"
+# Only replace NEW_ORG if there are matches
+files=$(grep -rl "NEW_ORG" . --exclude-dir=.git 2>/dev/null || true)
+if [ -n "$files" ]; then
+    sed -i "s/NEW_ORG/${NEW_ORG}/g" $files
+fi
 
 cd -
