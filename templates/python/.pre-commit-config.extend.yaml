@@ -4,3 +4,7 @@ repos:
   hooks:
     - id: black
       language_version: python3.12.4
+- repo: https://github.com/pre-commit/pre-commit-hooks
+  hooks:
+    - id: double-quote-string-fixer
+      exclude: './.*\.py$'
